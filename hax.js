@@ -1,4 +1,17 @@
+// ==UserScript==
+// @name         Haxtats - Haxbal stats & utilities bot
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  try to take over the world!
+// @author       Antek Goldstein <antek.goldstein@gmail.com>
+// @include      https://html5.haxball.com/headless
+// @grant        none
+// ==/UserScript==
+
 (() => {
+  'use strict';
+
+  window.onHBLoaded = () => {
   let teams = {
     'Soviet Union': [0, 0xffd900, [0xcd0000]],
     'European Harlot': [0, 0xffcc00, [0x000099]],
@@ -30,6 +43,7 @@
   button.innerHTML = 'Start game';
   bdiv.appendChild(button);
   form.appendChild(bdiv);
+
   let doc = document.getElementsByTagName('iframe')[0].contentDocument;
   doc.body.insertBefore(form, doc.getElementById('recaptcha'));
 
@@ -40,16 +54,19 @@
   for (let i = 0; i < teamkeys.length; i++) {
     let team = teamkeys[i];
     let o1 = opt(team, team), o2 = opt(team, team);
-    if (i == 0)
+    if (i == 0) {
       o1.selected = true;
-    else if (i == 1)
+    }
+    else if (i == 1) {
       o2.selected = true;
+    }
     s1.appendChild(o1); s2.appendChild(o2);
   }
 
   let preventSame = (me, him) => (() => {
-    if (me.value == him.value)
+    if (me.value == him.value) {
       him.selectedIndex = (him.selectedIndex + 1) % him.options.length;
+    }
   });
   s1.onchange = preventSame(s1, s2);
   s2.onchange = preventSame(s2, s1);
@@ -65,9 +82,9 @@
 
     var plnames = {}
     var stats = {}
-    getPlayers = () => room.getPlayerList().filter((player) => player.id != 0);
+    const getPlayers = () => room.getPlayerList().filter((player) => player.id != 0);
     // If there are no admins left in the room give admin to one of the remaining players.
-    function updateAdmins() { 
+    function updateAdmins() {
       // Get all players except the host (id = 0 is always the host)
       var players = getPlayers();
       if ( players.length == 0 ) return; // No players left, do nothing.
@@ -84,8 +101,9 @@
       const playerSize = 15;
       const tolerance = 4;
 
-      if (player.position == null)
+      if (player.position == null) {
         return false;
+      }
       let dist = distance(player.position, ballPos);
       return dist < ballSize + playerSize + tolerance ? dist : false;
     }
@@ -95,8 +113,9 @@
       if (t) {
         let percent = Math.round(100*stats.teams[1].ticks / t);
         room.sendChat(`POSSESSION: ${s1.value}: ${percent} %, ${s2.value}: ${100 - percent} %`);
-      } else
+      } else {
         room.sendChat(`POSSESSION: None`);
+      }
     }
 
     let chatmsg = '';
@@ -109,33 +128,39 @@
         chatmsg = '';
       }
     }
-    
+
     function fullstats() {
       let t = stats.teams[1].ticks + stats.teams[2].ticks;
       if (t) {
         let percent = Math.round(100*stats.teams[1].ticks / t);
         chatlog(`POSSESSION: ${s1.value}: ${percent}%, ${s2.value}: ${100 - percent}%`);
         let pstats = []
-        for (let pid in stats.players)
+        for (let pid in stats.players) {
           pstats.push([Math.round(100*stats.players[pid].ticks / t), plnames[pid]]);
+        }
         pstats.sort((a, b) => parseFloat(b) - parseFloat(a));
-        for (let i = 0; i < pstats.length; i++)
+        for (let i = 0; i < pstats.length; i++) {
           chatlog(` ${i+1}. ${pstats[i][1]}: ${pstats[i][0]}%`);
-      } else
+        }
+      } else {
         chatlog(`POSSESSION: None`);
+      }
       chatlog('PASSES: ' +
           `${s1.value}: ${stats.teams[1].passes}, consec.: ${stats.teams[1].mcpasses}, ` +
           `${s2.value}: ${stats.teams[2].passes}, consec.: ${stats.teams[2].mcpasses}`);
       let pstats = [];
-      for (let pid in stats.players)
+      for (let pid in stats.players) {
         pstats.push([stats.players[pid].passes, plnames[pid]]);
+      }
       pstats.sort((a, b) => parseInt(b) - parseInt(a));
-      for (let i = 0; i < pstats.length; i++)
+      for (let i = 0; i < pstats.length; i++) {
         chatlog(` ${i+1}. ${pstats[i][1]}: ${pstats[i][0]}`);
+      }
       if (stats.goals.length > 0) {
         chatlog('GOALS: ');
-        for (let g of stats.goals)
+        for (let g of stats.goals) {
           chatlog(`  [${g.time}] ${g.msg}`);
+        }
       }
       chatlog();
     }
@@ -143,8 +168,9 @@
     room.onPlayerJoin = (player) => {
       plnames[player.id] = player.name;
       updateAdmins();
-      if (stats.started)
+      if (stats.started) {
         stats.players[player.id] = {passes: 0, ticks: 0}
+      }
     }
 
     room.onPlayerLeave = (player) => {
@@ -162,8 +188,9 @@
         goals: [],
         players: {}
       };
-      for (let player of getPlayers())
+      for (let player of getPlayers()) {
         stats.players[player.id] = {passes: 0, ticks: 0}
+      }
     }
 
     room.onPositionsReset = () => {
@@ -186,8 +213,9 @@
             console.log(`Player ${passer.name} passed to ${passee.name}`)
               stats.teams[passer.team].passes++;
             stats.teams[passer.team].cpn++;
-            if (stats.teams[passer.team].mcpasses < stats.teams[passer.team].cpn)
+            if (stats.teams[passer.team].mcpasses < stats.teams[passer.team].cpn) {
               stats.teams[passer.team].mcpasses = stats.teams[passer.team].cpn;
+            }
             stats.players[passer.id].passes++;
           } else {
             // another team got the ball
@@ -205,22 +233,26 @@
     room.onGameTick = () => {
       const when = room.getScores().time;
       let min = Math.floor(when / 60).toString(), sec = (when % 60).toFixed(2);
-      if (when > 0 && sec != lastsec && sec == 0 && min % 2 == 0)
+      if (when > 0 && sec != lastsec && sec == 0 && min % 2 == 0) {
         possession();
+      }
       lastsec = sec;
 
       const ball = room.getBallPosition();
       let touching = {};
       let closest = [];
       for (let player of getPlayers()) {
-        if (player.team < 1)
+        if (player.team < 1) {
           continue;
+        }
         let dist;
         if (dist = touches(player, ball)) {
-          if (closest[0] == null || dist < closest[0].dist)
+          if (closest[0] == null || dist < closest[0].dist) {
             closest[0] = {dist: dist, player: player};
-          if (closest[player.team] == null || dist < closest[player.team])
+          }
+          if (closest[player.team] == null || dist < closest[player.team]) {
             closest[player.team] = {dist: dist, player: player};
+          }
           touching[player.id] = player;
           stats.teams[player.team].ticks++;
           stats.players[player.id].ticks++;
@@ -233,11 +265,13 @@
           if (touching[stats.touched.id]) {
             // previous player still touches
             stats.touchtime++;
-            if (stats.kicked.id && stats.touchtime >= 10)
+            if (stats.kicked.id && stats.touchtime >= 10) {
               stats.kicked = {}
+            }
           } else {
-            if (stats.touchtime > 0)
+            if (stats.touchtime > 0) {
               console.log(`Player ${stats.touched.name} touched ball for ${stats.touchtime} ticks`);
+            }
             stats.touchtime = 1;
             stats.touchedBefore = stats.touched;
             if (closest[stats.touched.team] != null) {
@@ -247,8 +281,9 @@
               console.log(`Player ${passer.name} passed to ${passee.name}`)
               stats.teams[passer.team].passes++;
               stats.teams[passer.team].cpn++;
-              if (stats.teams[passer.team].mcpasses < stats.teams[passer.team].cpn)
+              if (stats.teams[passer.team].mcpasses < stats.teams[passer.team].cpn) {
                 stats.teams[passer.team].mcpasses = stats.teams[passer.team].cpn;
+              }
               stats.players[passer.id].passes++;
               stats.touched = passee;
             } else {
@@ -290,5 +325,6 @@
     room.onGameStop = () => {
       fullstats();
     }
+  }
   }
 })();
