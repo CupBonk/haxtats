@@ -1,0 +1,2 @@
+# haxtats
+Haxball statistic bot
