@@ -194,6 +194,7 @@
         for (let player of getPlayers(true)) {
           stats.players[player.id] = {passes: 0, ticks: 0}
         }
+        room.startRecording();
       }
 
       room.onPositionsReset = () => {
@@ -289,7 +290,7 @@
         }
         if (closest[0] != null) {
           /* someone still touches */
-          /* if many players are touching, we set the owner conservativerly:
+          /* if many players are touching the ball, we set the owner conservatively:
            * the previous owner is preferred, then the closest one from his team
            * if none of them touches the ball, we choose the closest one
            */
@@ -324,12 +325,21 @@
 
       room.onGameStop = () => {
         fullstats();
+        let fname = 'HBReplay-' + (new Date()).toISOString().replace('T', '-').replace(':', 'h', 1).replace(/:.*/, 'm.hbr2');
+        let recording = btoa(String.fromCharCode.apply(null, room.stopRecording()));
+        let recLink = doc.createElement('a');
+        recLink.href = 'data:application/octet-stream;base64,' + recording;
+        recLink.innerText = 'Download recording: ' + fname;
+        recLink.download = fname;
+        doc.body.appendChild(recLink);
+        doc.body.appendChild(doc.createElement('br'));
+        return true;
       }
     }
   }
 
   let doc = document.getElementsByTagName('iframe')[0].contentDocument;
-  if (HBInit && doc.getElementsByName('button').length == 0) {
+  if (typeof HBInit != 'undefined' && doc.getElementsByName('button').length == 0) {
     onHBLoaded();
   }
 })();
